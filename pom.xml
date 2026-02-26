@@ -40,4 +40,8 @@
             </plugin>
         </plugins>
     </build>
+
+    <properties>
+         <sonar.organization>xushawnlin</sonar.organization>
+    </properties>
 </project>
