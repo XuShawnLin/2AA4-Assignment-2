@@ -35,6 +35,8 @@ public class Demonstrator {
         GameMaster gm = new GameMaster();
         gm.startGame();
 
+        Robber robber = new Robber();
+
         // Define and setup 4 players for the simulation
         Player[] players = {
                 new Player("Shawn"),
@@ -95,8 +97,15 @@ public class Demonstrator {
                 
                 // Turn Action: Roll the dice and distribute resources accordingly
                 int roll = gm.rollDice();
-                gm.distributeResources(roll);
                 System.out.println(round + " / " + p.getName() + ": rolled a " + roll);
+
+                if (roll == 7) {
+                    // robber logic to discard, move robber, steal
+                    robber.rollSeven(gm, p);
+                    System.out.println(round + " / " + p.getName() + ": robber activated");
+                } else {
+                    gm.distributeResources(roll);
+                }
 
                 // Simulation Logic: Periodically grant additional resources to accelerate game progress
                 if (Math.random() > 0.3) {
