@@ -1,8 +1,8 @@
-package test.java.A2;
+package A2;
 
 import org.junit.jupiter.api.Test;
 
-import main.java.A2.Die;
+import A2.Die;
 
 import static org.junit.jupiter.api.Assertions.*;
 

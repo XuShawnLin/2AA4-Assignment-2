@@ -1,13 +1,13 @@
-package test.java.A2;
+package A2;
 
 import org.junit.jupiter.api.Test;
 
-import main.java.A2.Bank;
-import main.java.A2.BuildStructure;
-import main.java.A2.Player;
-import main.java.A2.Node;
-import main.java.A2.Edge;
-import main.java.A2.BuildingType;
+import A2.Bank;
+import A2.BuildStructure;
+import A2.Player;
+import A2.Node;
+import A2.Edge;
+import A2.BuildingType;
 
 import static org.junit.jupiter.api.Assertions.*;
 

@@ -1,9 +1,9 @@
-package test.java.A2;
+package A2;
 
 import org.junit.jupiter.api.Test;
 
-import main.java.A2.Player;
-import main.java.A2.ResourceType;
+import A2.Player;
+import A2.ResourceType;
 
 import static org.junit.jupiter.api.Assertions.*;
 
