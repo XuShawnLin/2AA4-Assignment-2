@@ -17,7 +17,7 @@ public class Robber {
         this(new SecureRandom());
     }
 
-    public Robber(Random randomNum) {
+    public Robber(SecureRandom randomNum) {
         this.randomNum = randomNum;
         this.currentTile = null; //will be set when moved to a tile
     }
