@@ -1,10 +1,9 @@
 package A2;
 
-
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 /**
  * Implements the robber behavior:
@@ -12,10 +11,10 @@ import java.util.Random;
 public class Robber {
 
     private HexTile currentTile;
-    private final Random randomNum;
+    private final SecureRandom randomNum; //using secure random as its a safer random number generator (suggested by Sonar Qube)
 
     public Robber() {
-        this(new Random());
+        this(new SecureRandom());
     }
 
     public Robber(Random randomNum) {
