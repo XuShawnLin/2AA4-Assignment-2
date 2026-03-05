@@ -28,16 +28,16 @@ public class Robber {
 
     /**
      * Called when a 7 is rolled.
-     * @param gameMaster the Game
+     * @param board the Board
      * @param roller the player who rolled the 7
      */
-    public void rollSeven(GameMaster gameMaster, Player roller) {
-        if (gameMaster.getPlayers() != null) { //Discard half for random any player with more than 7 total resources
-            for (Player player : gameMaster.getPlayers()) {
+    public void rollSeven(Board board, Player[] players, Player roller) {
+        if (players != null) { //Discard half for random any player with more than 7 total resources
+            for (Player player : players) {
                 removeHalf(player);
             }
         }
-        moveTile(gameMaster.getBoard()); //mode robber to random tile
+        moveTile(board); //mode robber to random tile
         
         Player victim = getVictim(currentTile, roller); //choosing victim adajcent to robber tile
         if (victim == null) return;

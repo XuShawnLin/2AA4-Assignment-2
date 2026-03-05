@@ -100,7 +100,7 @@ public class Demonstrator {
 
                 if (roll == 7) {
                     // robber logic to discard, move robber, steal
-                    robber.rollSeven(gameMaster, p);
+                    robber.rollSeven(gameMaster.getBoard(), gameMaster.getPlayers(), p);
                     System.out.println(round + " / " + p.getName() + ": robber activated");
                 } else {
                     gameMaster.distributeResources(roll);
