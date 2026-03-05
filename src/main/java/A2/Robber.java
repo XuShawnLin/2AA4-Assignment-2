@@ -32,7 +32,7 @@ public class Robber {
      * @param roller the player who rolled the 7
      */
     public void rollSeven(Board board, Player[] players, Player roller) {
-        if (players != null) { //Discard half for random any player with more than 7 total resources
+        if (players != null) { //discard half for random any player with more than 7 total resources
             for (Player player : players) {
                 removeHalf(player);
             }
