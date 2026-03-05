@@ -13,7 +13,7 @@ public class BankTest {
     void constructor_add19ofEachResource() {
         Bank bank = new Bank();
         for (ResourceType item : ResourceType.values()) {
-            assertEquals(19, bank.resourceList.get(item));
+            assertEquals(19, bank.getResourceCount(item));
         }
     }
 
@@ -33,13 +33,13 @@ public class BankTest {
     void giveResource_decreasesWhenAvailable() {
         Bank bank = new Bank();
         assertTrue(bank.giveResource(ResourceType.WOOL, 3));
-        assertEquals(16, bank.resourceList.get(ResourceType.WOOL));
+        assertEquals(16, bank.getResourceCount(ResourceType.WOOL));
     }
 
     @Test
     void giveResource_failsWhenNotavailable() {
         Bank bank = new Bank();
         assertFalse(bank.giveResource(ResourceType.GRAIN, 50));
-        assertEquals(19, bank.resourceList.get(ResourceType.GRAIN));
+        assertEquals(19, bank.getResourceCount(ResourceType.GRAIN));
     }
 }

@@ -1,10 +1,13 @@
 package A2;
 
+import java.security.SecureRandom;
+
 /**
  * Class representing a die in the game.
  */
 public class Die {
 	private int value;
+	private static final SecureRandom random = new SecureRandom();
 
 	/**
 	 * Constructor for Die class.
@@ -18,9 +21,11 @@ public class Die {
 	 * @return The result of the die roll.
 	 */
 	public int Roll() {
-		this.value = (int)(Math.random() * 6) + 1;
+		this.value = random.nextInt(6) + 1;
 		return this.value;
 	}
+
+	public int roll() { return Roll(); }
 
 	public int getValue() {
 		return value;

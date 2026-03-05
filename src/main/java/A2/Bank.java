@@ -7,7 +7,7 @@ import java.util.Map;
  * Class representing the bank in the game.
  */
 public class Bank {
-	public Map<ResourceType, Integer> resourceList;
+	private Map<ResourceType, Integer> resourceList;
 
 	/**
 	 * Constructor for Bank class.
@@ -52,5 +52,9 @@ public class Bank {
 	public boolean receiveResource(ResourceType type, int amount) {
 		resourceList.put(type, resourceList.getOrDefault(type, 0) + amount);
 		return true;
+	}
+	
+	public int getResourceCount(ResourceType type) {
+	    return resourceList.get(type);
 	}
 }

@@ -10,19 +10,19 @@ public class Edge {
 	/**
 	 * Unique identifier for the edge.
 	 */
-	public int id;
+	private int id;
 	/**
 	 * Player who owns a road on this edge.
 	 */
-	public Player owner;
+	private Player owner;
 	/**
 	 * Type of building on this edge (Road).
 	 */
-	public BuildingType building;
+	private BuildingType building;
 	/**
 	 * Nodes connected by this edge.
 	 */
-	public List<Node> connectedNodes;
+	private List<Node> connectedNodes;
 
 	/**
 	 * Constructor for Edge.
@@ -49,4 +49,30 @@ public class Edge {
 	public boolean isOccupied() {
 		return owner != null;
 	}
+
+    public Player getOwner() {
+		return owner;
+	}
+
+    public void setOwner(Player owner) {
+		this.owner = owner;
+	}
+
+    public void setBuilding(BuildingType building) {
+		this.building = building;
+	}
+    
+    public BuildingType getBuilding() {
+        return building;
+    }
+
+    public List<Node> getConnectedNodes() {
+		return connectedNodes;
+	}
+    
+    public void addConnectedNode(Node node) {
+        connectedNodes.add(node);
+    }
+
+
 }

@@ -26,11 +26,11 @@ public class GameMasterTest {
     @Test
     void nextTurn_cyclesPlayers() {
         GameMaster gameMaster = new GameMaster();
-        gameMaster.players = new Player[]{
+        gameMaster.setPlayers(new Player[]{
                 new Player("P1"),
                 new Player("P2"),
                 new Player("P3")
-        };
+        });
         assertEquals("P1", gameMaster.getCurrentPlayer().getName());
         gameMaster.nextTurn();
         assertEquals("P2", gameMaster.getCurrentPlayer().getName());
@@ -45,7 +45,7 @@ public class GameMasterTest {
         GameMaster gameMaster = new GameMaster();
         Player player = new Player("P1");
         player.addVictoryPoints(8);
-        gameMaster.players = new Player[]{ player };
+        gameMaster.setPlayers(new Player[]{ player });
         assertTrue(gameMaster.checkWin());
     }
 
@@ -54,7 +54,7 @@ public class GameMasterTest {
         GameMaster gameMaster = new GameMaster();
         SpyPlayer player = new SpyPlayer("P1");
         player.addResource(ResourceType.BRICK, 7);
-        gameMaster.players = new Player[]{ player };
+        gameMaster.setPlayers(new Player[]{ player });
         gameMaster.handlePlayersWithMoreThanSevenCards();
         assertFalse(player.buildCalled);
     }
@@ -64,7 +64,7 @@ public class GameMasterTest {
         GameMaster gameMaster = new GameMaster();
         SpyPlayer player = new SpyPlayer("P1");
         player.addResource(ResourceType.BRICK, 8);
-        gameMaster.players = new Player[]{ player };
+        gameMaster.setPlayers(new Player[]{ player });
         gameMaster.handlePlayersWithMoreThanSevenCards();
         assertTrue(player.buildCalled);
     }

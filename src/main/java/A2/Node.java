@@ -10,23 +10,23 @@ public class Node {
 	/**
 	 * Unique identifier for the node.
 	 */
-	public int id;
+	private int id;
 	/**
 	 * Player who owns a building on this node.
 	 */
-	public Player owner;
+	private Player owner;
 	/**
 	 * Type of building on this node (Settlement or City).
 	 */
-	public BuildingType building;
+	private BuildingType building;
 	/**
 	 * Neighbors of this node.
 	 */
-	public List<Node> neighbors;
+	private List<Node> neighbors;
 	/**
 	 * Edges connected to this node.
 	 */
-	public List<Edge> connectedEdges;
+	private List<Edge> connectedEdges;
 
 	/**
 	 * Constructor for Node.
@@ -54,8 +54,37 @@ public class Node {
 	public boolean isOccupied() {
 		return owner != null;
 	}
+    public int getId() {
+		return id;
+	}
 
-	public Player getOwner() {
+    public Player getOwner() {
 		return owner;
 	}
+
+    public void setOwner(Player owner) {
+		this.owner = owner;
+	}
+
+    public BuildingType getBuilding() {
+		return building;
+	}
+
+    public void setBuilding(BuildingType building) {
+		this.building = building;
+	}
+
+    public List<Edge> getConnectedEdges() {
+		return connectedEdges;
+	}
+
+    public List<Node> getNeighbors() {
+		return neighbors;
+	}
+    
+    public void addNeighbor(Node node) {
+        neighbors.add(node);
+    }
+    
+
 }

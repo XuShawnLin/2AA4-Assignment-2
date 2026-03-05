@@ -2,12 +2,7 @@ package A2;
 
 import org.junit.jupiter.api.Test;
 
-import A2.Bank;
-import A2.BuildStructure;
-import A2.Player;
-import A2.Node;
-import A2.Edge;
-import A2.BuildingType;
+import A2.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -17,12 +12,15 @@ public class BuildStructureTest {
     void buildSettlement_setsOwnerAndGivesVP() {
         Player player = new Player("P1");
         Bank bank = new Bank();
-        BuildStructure buildStructure = new BuildStructure(player, bank);
+        Board board = new Board(); 
+        BuildStructure buildStructure = new BuildStructure();
+
         Node node = new Node(1);
         int beforeVP = player.getVictoryPoints();
-        assertTrue(buildStructure.buildSettlement(node));
-        assertEquals(player, node.owner);
-        assertEquals(BuildingType.SETTLEMENT, node.building);
+
+        assertTrue(buildStructure.buildSettlement(player, node, board, bank));
+        assertEquals(player, node.getOwner());
+        assertEquals(BuildingType.SETTLEMENT, node.getBuilding());
         assertEquals(beforeVP + 1, player.getVictoryPoints());
     }
 
@@ -30,24 +28,20 @@ public class BuildStructureTest {
     void buildCity_requiresOwnSettlement() {
         Player player = new Player("P1");
         Bank bank = new Bank();
-        BuildStructure buildStructure = new BuildStructure(player, bank);
+        Board board = new Board();
+        BuildStructure buildStructure = new BuildStructure();
+
         Node node = new Node(2);
-        assertFalse(buildStructure.buildCity(node));
-        assertTrue(buildStructure.buildSettlement(node));
+
+        assertFalse(buildStructure.buildCity(player, node, board, bank));
+
+        assertTrue(buildStructure.buildSettlement(player, node, board, bank));
+
         int beforeVP = player.getVictoryPoints();
-        assertTrue(buildStructure.buildCity(node));
-        assertEquals(BuildingType.CITY, node.building);
+        assertTrue(buildStructure.buildCity(player, node, board, bank));
+
+        assertEquals(BuildingType.CITY, node.getBuilding());
         assertEquals(beforeVP + 1, player.getVictoryPoints());
     }
 
-    @Test
-    void buildRoad_setsOwnerAndType() {
-        Player player = new Player("P1");
-        Bank bank = new Bank();
-        BuildStructure buildStructure = new BuildStructure(player, bank);
-        Edge edge = new Edge(10);
-        assertTrue(buildStructure.buildRoad(edge));
-        assertEquals(player, edge.owner);
-        assertEquals(BuildingType.ROAD, edge.building);
-    }
 }

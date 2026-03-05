@@ -1,62 +1,45 @@
 package A2;
 
 /**
- * Class representing a player's action to build structures in the game.
+ * Performs build actions (SRP) using a validator.
+ * Kept intentionally close to the original BuildService logic.
  */
 public class BuildStructure {
-	private Player player;
+    private final BuildValidator validator;
 
-	private Bank bank;
-	/**
-	 * Constructor for BuildStructure class.
-	 * @param p The player performing the build action.
-	 * @param bank The bank instance.
-	 */
-	public BuildStructure(Player p, Bank bank) {
-		this.player = p;
-		this.bank = bank;
-	}
+    public BuildStructure() {
+        this.validator = new BuildValidator();
+    }
 
-	/**
-	 * Attempts to build a settlement.
-	 * @param node The node where to build.
-	 * @return True if settlement is successfully built, false otherwise.
-	 */
-	public boolean buildSettlement(Node node) {
-		if (node == null || node.isOccupied()) return false;
-		node.owner = player;
-		node.building = BuildingType.SETTLEMENT;
-		player.addVictoryPoints(1);
-		return true;
-	}
+    public BuildStructure(BuildValidator validator) {
+        this.validator = (validator == null) ? new BuildValidator() : validator;
+    }
 
-	/**
-	 * Attempts to build a city.
-	 * @param node The node where to build.
-	 * @return True if city is successfully built, false otherwise.
-	 */
-	public boolean buildCity(Node node) {
-		if (node == null || node.owner != player || node.building != BuildingType.SETTLEMENT) return false;
-		node.building = BuildingType.CITY;
-		player.addVictoryPoints(1); // Settlement (1) -> City (2) is +1 VP
-		return true;
-	}
+    public boolean buildRoad(Player player, Edge edge, Board board, Bank bank) {
+        if (!validator.canBuildRoad(player, edge, board)) {
+            return false;
+        }
+        edge.setOwner(player);
+        edge.setBuilding(BuildingType.ROAD);
+        return true;
+    }
 
-	/**
-	 * Attempts to build a road.
-	 * @param edge The edge where to build.
-	 * @return True if road is successfully built, false otherwise.
-	 */
-	public boolean buildRoad(Edge edge) {
-		if (edge == null || edge.isOccupied()) return false;
-		edge.owner = player;
-		edge.building = BuildingType.ROAD;
-		return true;
-	}
+    public boolean buildSettlement(Player player, Node node, Board board, Bank bank) {
+        if (!validator.canBuildSettlement(player, node, board)){
+            return false;
+        }
+        node.setOwner(player);
+        node.setBuilding(BuildingType.SETTLEMENT);
+        player.addVictoryPoints(1);
+        return true;
+    }
 
-	/**
-	 * Awards victory points to the player based on built structures.
-	 */
-	public void giveVPs() {
-	}
+    public boolean buildCity(Player player, Node node, Board board, Bank bank) {
+        if (!validator.canBuildCity(player, node, board)) {
+            return false;
+        }
+        node.setBuilding(BuildingType.CITY);
+        player.addVictoryPoints(1);
+        return true;
+    }
 }

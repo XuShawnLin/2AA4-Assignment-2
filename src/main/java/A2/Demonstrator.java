@@ -1,6 +1,5 @@
 package A2;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -31,9 +30,9 @@ public class Demonstrator {
         
         System.out.println("turns: " + turns);
 
-        // Initialize the GameMaster and start the game
-        GameMaster gm = new GameMaster();
-        gm.startGame();
+        // Initialize the Game and start the game
+        GameMaster gameMaster = new GameMaster();
+        gameMaster.startGame();
 
         Robber robber = new Robber();
 
@@ -44,12 +43,12 @@ public class Demonstrator {
                 new Player("Subha"),
                 new Player("Ahmed")
         };
-        gm.players = players;
+        gameMaster.setPlayers(players);
         
-        // Note: For simulation purposes, we use the default winning condition from GameMaster.
+        // Note: For simulation purposes, we use the default winning condition from Game.
 
         // Setup the game board using spiral identification
-        Board board = gm.board;
+        Board board = gameMaster.getBoard();
         // Identification logic: 0 is center, 1-6 are the inner ring, 7-18 are the outer ring.
         
         // Assign resources and number tokens to tiles based on the spiral layout
@@ -67,9 +66,9 @@ public class Demonstrator {
         List<HexTile> tiles = board.getTiles();
         for (int i = 0; i < tiles.size() && i < 19; i++) {
             HexTile tile = tiles.get(i);
-            tile.resource = resOrder[i];
+            tile.setResource(resOrder[i]);
             if (tokenOrder[i] != 0) {
-                tile.tokenNumber = TokenNumber.valueOf("T" + tokenOrder[i]);
+                tile.setTokenNumber(Integer.valueOf(tokenOrder[i]));
             }
             
             // Link nodes to tiles to enable resource production simulation.
@@ -85,26 +84,26 @@ public class Demonstrator {
             Player p = players[i];
             Node n = board.getNodes().get(i * 2);
             // Build the initial settlement for each player during setup phase
-            BuildStructure bs = new BuildStructure(p, gm.bank);
-            bs.buildSettlement(n);
-            System.out.println("0 / " + p.getName() + ": placed a settlement on node " + n.id);
+            BuildStructure bs = gameMaster.getBuildService();
+            gameMaster.getBuildService().buildSettlement(p, n, gameMaster.getBoard(), gameMaster.getBank());
+            System.out.println("0 / " + p.getName() + ": placed a settlement on node " + n.getId());
         }
 
         // Execute the main simulation loop
         for (int round = 1; round <= turns; round++) {
             for (int i = 0; i < players.length; i++) {
-                Player p = gm.getCurrentPlayer();
+                Player p = gameMaster.getCurrentPlayer();
                 
                 // Turn Action: Roll the dice and distribute resources accordingly
-                int roll = gm.rollDice();
+                int roll = gameMaster.rollDice();
                 System.out.println(round + " / " + p.getName() + ": rolled a " + roll);
 
                 if (roll == 7) {
                     // robber logic to discard, move robber, steal
-                    robber.rollSeven(gm, p);
+                    robber.rollSeven(gameMaster, p);
                     System.out.println(round + " / " + p.getName() + ": robber activated");
                 } else {
-                    gm.distributeResources(roll);
+                    gameMaster.distributeResources(roll);
                 }
 
                 // Simulation Logic: Periodically grant additional resources to accelerate game progress
@@ -121,8 +120,8 @@ public class Demonstrator {
                     // Try to find a valid location for a new settlement
                     for (Node node : board.getNodes()) {
                         if (board.isValidSettlement(node, p)) {
-                            if (gm.buildSettlement(node)) {
-                                System.out.println(round + " / " + p.getName() + ": built a settlement on node " + node.id);
+                            if (gameMaster.buildSettlement(node)) {
+                                System.out.println(round + " / " + p.getName() + ": built a settlement on node " + node.getId());
                                 built = true;
                                 break;
                             }
@@ -141,13 +140,13 @@ public class Demonstrator {
                 }
 
                 // Check if the current player has reached the victory point threshold
-                if (gm.checkWin()) {
+                if (gameMaster.checkWin()) {
                     System.out.println(round + " / " + p.getName() + ": WON THE GAME!");
                     return;
                 }
                 
                 // Pass the turn to the next player
-                gm.nextTurn();
+                gameMaster.nextTurn();
             }
         }
     }

@@ -10,30 +10,30 @@ public class HexTile {
 	/**
 	 * Unique identifier for the tile.
 	 */
-	public int id;
+	private int id;
 	/**
 	 * Type of resource this tile produces.
 	 */
-	public ResourceType resource;
+	private ResourceType resource;
 	/**
 	 * List of nodes (corners) surrounding this tile.
 	 */
-	public List<Node> nodes;
+	private List<Node> nodes;
 	/**
 	 * List of edges (borders) surrounding this tile.
 	 */
-	public List<Edge> edges;
+	private List<Edge> edges;
 	/**
 	 * Number token associated with this tile.
 	 */
-	public TokenNumber tokenNumber;
+	private Integer tokenNumber; // null if DESERT / no token
 
 	/**
 	 * Constructor for HexTile.
 	 * @param resource The type of resource this tile produces.
 	 * @param token The token number for resource production.
 	 */
-	public HexTile(ResourceType resource, TokenNumber token) {
+	public HexTile(ResourceType resource, Integer token) {
 		this.resource = resource;
 		this.tokenNumber = token;
 		this.nodes = new ArrayList<>();
@@ -51,17 +51,10 @@ public class HexTile {
 		this.resource = resource;
 		this.nodes = new ArrayList<>();
 		this.edges = new ArrayList<>();
-		if (token != 0) {
-			this.tokenNumber = TokenNumber.valueOf("T" + token);
-		}
+		this.tokenNumber = (token == 0 ? null : Integer.valueOf(token));
 	}
-
-	public TokenNumber getTokenNumberEnum() {
+	public Integer getTokenNumber() {
 		return tokenNumber;
-	}
-
-	public int getTokenNumber() {
-		return tokenNumber == null ? 0 : tokenNumber.getValue();
 	}
 
 	public ResourceType getResource() {
@@ -87,9 +80,22 @@ public class HexTile {
 		if (resource == null) return; // Desert or no resource
 		for (Node node : nodes) {
 			if (node.isOccupied()) {
-				int amount = (node.building == BuildingType.CITY) ? 2 : 1;
-				node.owner.addResource(resource, amount);
+				int amount = (node.getBuilding() == BuildingType.CITY) ? 2 : 1;
+				node.getOwner().addResource(resource, amount);
 			}
 		}
+	}
+
+	public void setTokenNumber(Integer tokenNumber) {
+		this.tokenNumber = tokenNumber;
+	}
+
+	public void setResource(ResourceType resource) {
+		this.resource = resource;
+	}
+
+
+	public List<Edge> getEdges() {
+		return edges;
 	}
 }

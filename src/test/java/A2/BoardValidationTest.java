@@ -17,7 +17,7 @@ public class BoardValidationTest {
         Board board = new Board();
         Player player = new Player("P1");
         Node node = new Node(1);
-        node.owner = player;
+        node.setOwner(player);
         assertFalse(board.isValidSettlement(node, player));
     }
 
@@ -28,8 +28,8 @@ public class BoardValidationTest {
         Player player2 = new Player("P2");
         Node node1 = new Node(1);
         Node neighbor = new Node(2);
-        node1.neighbors.add(neighbor);
-        neighbor.owner = player2;
+        node1.addNeighbor(neighbor);
+        neighbor.setOwner(player2);
         assertFalse(board.isValidSettlement(node1, player1));
     }
 
@@ -39,7 +39,7 @@ public class BoardValidationTest {
         Player player = new Player("P1");
         Node node1 = new Node(3);
         Node neighbor = new Node(4);
-        node1.neighbors.add(neighbor);
+        node1.addNeighbor(neighbor);
         assertTrue(board.isValidSettlement(node1, player));
     }
 
@@ -48,7 +48,7 @@ public class BoardValidationTest {
         Board board = new Board();
         Player player = new Player("P1");
         Edge edge = new Edge(7);
-        edge.owner = player;
+        edge.setOwner(player);
         assertFalse(board.isValidRoad(edge, player));
     }
 
@@ -58,10 +58,10 @@ public class BoardValidationTest {
         Player player = new Player("P1");
         Node node1 = new Node(1);
         Node node2 = new Node(2);
-        node1.owner = player;
+        node1.setOwner(player);
         Edge edge = new Edge(99);
-        edge.connectedNodes.add(node1);
-        edge.connectedNodes.add(node2);
+        edge.addConnectedNode(node1);
+        edge.addConnectedNode(node2);
         assertTrue(board.isValidRoad(edge, player));
     }
 }

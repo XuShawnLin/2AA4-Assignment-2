@@ -34,9 +34,8 @@ public class Board {
 	 * Initializes the board structure with 19 tiles and 54 nodes.
 	 */
 	private void initializeBoard() {
-		// Initialize tiles 0-18 (spiral order: 0=middle, 1-6=inner, 7-18=outer)
+		// Initialize tiles 0-18
 		for (int i = 0; i < 19; i++) {
-			// Resource and token will be assigned by GameMaster/Demonstrator
 			tiles.add(new HexTile(i, null, 0));
 		}
 
@@ -44,10 +43,6 @@ public class Board {
 		for (int i = 0; i < 54; i++) {
 			nodes.add(new Node(i));
 		}
-
-		// Simplified mapping for the spiral board
-		// In a real implementation, we'd define which nodes connect to which tiles.
-		// For this simulation, we'll ensure each tile has its required nodes.
 	}
 
 	/**
@@ -109,16 +104,16 @@ public class Board {
 		if (n.isOccupied()) return false;
 
 		// Distance rule: no building on adjacent nodes
-		for (Node neighbor : n.neighbors) {
+		for (Node neighbor : n.getNeighbors()) {
 			if (neighbor.isOccupied()) return false;
 		}
 
 		// Connectivity rule: must be connected to a road of the same player
-		// (Exception: during initial placement, but GameMaster handles that differently)
+		// (Exception: during initial placement, but Game handles that differently)
 		boolean connected = false;
-		if (n.connectedEdges.isEmpty()) return true; // For simulation simplicity if edges aren't fully set up
-		for (Edge edge : n.connectedEdges) {
-			if (edge.owner == p) {
+		if (n.getConnectedEdges().isEmpty()) return true; // For simulation simplicity if edges aren't fully set up
+		for (Edge edge : n.getConnectedEdges()) {
+			if (edge.getOwner() == p) {
 				connected = true;
 				break;
 			}
@@ -137,10 +132,10 @@ public class Board {
 		if (e.isOccupied()) return false;
 
 		// Connectivity rule: must be connected to player's road or building
-		for (Node node : e.connectedNodes) {
-			if (node.owner == p) return true;
-			for (Edge adjEdge : node.connectedEdges) {
-				if (adjEdge != e && adjEdge.owner == p) return true;
+		for (Node node : e.getConnectedNodes()) {
+			if (node.getOwner() == p) return true;
+			for (Edge adjEdge : node.getConnectedEdges()) {
+				if (adjEdge != e && adjEdge.getOwner() == p) return true;
 			}
 		}
 
@@ -155,17 +150,10 @@ public class Board {
 	public List<HexTile> getAdjacentTiles(Node n) {
 		List<HexTile> adjacent = new ArrayList<>();
 		for (HexTile tile : tiles) {
-			if (tile.nodes.contains(n)) {
+			if (tile.getNodes().contains(n)) {
 				adjacent.add(tile);
 			}
 		}
 		return adjacent;
-	}
-
-	/**
-	 * Updates board state.
-	 */
-	public void updateBoard() {
-		// General update logic
 	}
 }
