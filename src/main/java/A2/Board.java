@@ -1,28 +1,13 @@
 package A2;
+
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Class representing the game board in the Catan game.
- */
 public class Board {
-	/**
-	 * List of all hex tiles on the board.
-	 */
 	private List<HexTile> tiles;
-	/**
-	 * List of all nodes (corners) on the board.
-	 */
 	private List<Node> nodes;
-	/**
-	 * List of all edges (borders) on the board.
-	 */
 	private List<Edge> edges;
 
-	/**
-	 * Constructor for Board.
-	 * Initializes the board components.
-	 */
 	public Board() {
 		this.tiles = new ArrayList<>();
 		this.nodes = new ArrayList<>();
@@ -30,130 +15,48 @@ public class Board {
 		initializeBoard();
 	}
 
-	/**
-	 * Initializes the board structure with 19 tiles and 54 nodes.
-	 */
 	private void initializeBoard() {
-		// Initialize tiles 0-18
-		for (int i = 0; i < 19; i++) {
-			tiles.add(new HexTile(i, null, 0));
-		}
-
-		// Initialize 54 nodes
-		for (int i = 0; i < 54; i++) {
-			nodes.add(new Node(i));
-		}
+		for (int i = 0; i < 19; i++) tiles.add(new HexTile(i, null, 0));
+		for (int i = 0; i < 54; i++) nodes.add(new Node(i));
 	}
 
-	/**
-	 * Gets all tiles on the board.
-	 * @return List of tiles.
-	 */
-	public List<HexTile> getTiles() {
-		return tiles;
-	}
+	public List<HexTile> getTiles() { return tiles; }
+	public List<Node> getNodes() { return nodes; }
+	public List<Edge> getEdges() { return edges; }
 
-	/**
-	 * Gets all nodes on the board.
-	 * @return List of nodes.
-	 */
-	public List<Node> getNodes() {
-		return nodes;
-	}
+	public void addTile(HexTile tile) { tiles.add(tile); }
+	public void addNode(Node node) { nodes.add(node); }
+	public void addEdge(Edge edge) { edges.add(edge); }
 
-	/**
-	 * Gets all edges on the board.
-	 * @return List of edges.
-	 */
-	public List<Edge> getEdges() {
-		return edges;
-	}
-
-	/**
-	 * Adds a tile to the board.
-	 * @param tile The tile to add.
-	 */
-	public void addTile(HexTile tile) {
-		this.tiles.add(tile);
-	}
-
-	/**
-	 * Adds a node to the board.
-	 * @param node The node to add.
-	 */
-	public void addNode(Node node) {
-		this.nodes.add(node);
-	}
-
-	/**
-	 * Adds an edge to the board.
-	 * @param edge The edge to add.
-	 */
-	public void addEdge(Edge edge) {
-		this.edges.add(edge);
-	}
-
-	/**
-	 * Validates if a settlement can be placed on a node.
-	 * Includes the distance rule (no adjacent settlements) and connectivity rule.
-	 * @param n The node to check.
-	 * @param p The player building.
-	 * @return True if valid.
-	 */
-	public boolean isValidSettlement(Node n, Player p) {
+	// ---------------- Fixed method ----------------
+	public boolean isValidSettlement(Node n, Player p, boolean ignoreRoads) {
 		if (n.isOccupied()) return false;
 
-		// Distance rule: no building on adjacent nodes
+		// Distance rule
 		for (Node neighbor : n.getNeighbors()) {
 			if (neighbor.isOccupied()) return false;
 		}
 
-		// Connectivity rule: must be connected to a road of the same player
-		// (Exception: during initial placement, but Game handles that differently)
-		boolean connected = false;
-		if (n.getConnectedEdges().isEmpty()) return true; // For simulation simplicity if edges aren't fully set up
+		if (ignoreRoads) return true; // initial placement ignores connectivity
+
+		// Connectivity: must be connected to player's road
 		for (Edge edge : n.getConnectedEdges()) {
-			if (edge.getOwner() == p) {
-				connected = true;
-				break;
-			}
+			if (edge.getOwner() == p) return true;
 		}
 
-		return connected;
+		return false; // Not connected
 	}
 
-	/**
-	 * Validates if a road can be placed on an edge.
-	 * @param e The edge to check.
-	 * @param p The player building.
-	 * @return True if valid.
-	 */
 	public boolean isValidRoad(Edge e, Player p) {
 		if (e.isOccupied()) return false;
 
-		// Connectivity rule: must be connected to player's road or building
 		for (Node node : e.getConnectedNodes()) {
 			if (node.getOwner() == p) return true;
-			for (Edge adjEdge : node.getConnectedEdges()) {
-				if (adjEdge != e && adjEdge.getOwner() == p) return true;
+			for (Edge adj : node.getConnectedEdges()) {
+				if (adj != e && adj.getOwner() == p) return true;
 			}
 		}
 
 		return false;
-	}
-
-	/**
-	 * Returns tiles adjacent to a given node.
-	 * @param n The node.
-	 * @return List of adjacent tiles.
-	 */
-	public List<HexTile> getAdjacentTiles(Node n) {
-		List<HexTile> adjacent = new ArrayList<>();
-		for (HexTile tile : tiles) {
-			if (tile.getNodes().contains(n)) {
-				adjacent.add(tile);
-			}
-		}
-		return adjacent;
 	}
 }

@@ -1,151 +1,182 @@
 package A2;
 
 import java.util.List;
+import java.util.Scanner;
 
-/**
- * Demonstrator class for the Catan game implementation.
- * This class simulates a game of Catan, handling setup, turn-based actions,
- * and game termination conditions.
- */
 public class Demonstrator {
-    /**
-     * Main method to run the Catan game simulation.
-     * 
-     * @param args Command line arguments. The first argument can be used to set the maximum number of turns (1-8192).
-     */
+
     public static void main(String[] args) {
-        int turns = 8192; // Max number of turns
-        
-        // Parse the number of turns from command line arguments if provided
+        int maxTurns = 8192;
+
+        // Optional command-line override
         if (args.length > 0) {
             try {
                 int inputTurns = Integer.parseInt(args[0]);
-                if (inputTurns > 0 && inputTurns <= 8192) {
-                    turns = inputTurns;
-                }
-            } catch (NumberFormatException e) {
-                // Keep default value if parsing fails
-            }
+                if (inputTurns > 0 && inputTurns <= 8192) maxTurns = inputTurns;
+            } catch (NumberFormatException ignored) {}
         }
-        
-        System.out.println("turns: " + turns);
 
-        // Initialize the Game and start the game
+        System.out.println("Turns: " + maxTurns);
+
+        // Initialize game master
         GameMaster gameMaster = new GameMaster();
         gameMaster.startGame();
 
-        Robber robber = new Robber();
-
-        // Define and setup 4 players for the simulation
+        // Players: Shawn is human
         Player[] players = {
-                new Player("Shawn"),
+                new HumanPlayer("Shawn"),
                 new Player("Sabrina"),
                 new Player("Subha"),
                 new Player("Ahmed")
         };
         gameMaster.setPlayers(players);
-        
-        // Note: For simulation purposes, we use the default winning condition from Game.
 
-        // Setup the game board using spiral identification
         Board board = gameMaster.getBoard();
-        // Identification logic: 0 is center, 1-6 are the inner ring, 7-18 are the outer ring.
-        
-        // Assign resources and number tokens to tiles based on the spiral layout
-        ResourceType[] resOrder = {
-                ResourceType.LUMBER, // 0 (Center)
-                ResourceType.LUMBER, ResourceType.LUMBER, ResourceType.LUMBER, // 1-3 (Inner)
-                ResourceType.GRAIN, ResourceType.GRAIN, ResourceType.GRAIN, // 4-6 (Inner)
-                ResourceType.GRAIN, ResourceType.WOOL, ResourceType.WOOL, ResourceType.WOOL, // 7-10 (Outer)
-                ResourceType.WOOL, ResourceType.BRICK, ResourceType.BRICK, ResourceType.BRICK, // 11-14 (Outer)
-                ResourceType.ORE, ResourceType.ORE, ResourceType.ORE, // 15-17 (Outer)
-                null // 18 (Desert)
-        };
-        int[] tokenOrder = {11, 3, 6, 4, 5, 9, 10, 8, 2, 12, 9, 10, 4, 5, 6, 3, 8, 11, 0};
+        BuildStructure buildService = gameMaster.getBuildService();
+        BuildValidator validator = buildService.getValidator();
 
+        // Setup tiles and tokens (your existing spiral setup)
+        ResourceType[] resOrder = {
+                ResourceType.LUMBER, ResourceType.LUMBER, ResourceType.LUMBER, ResourceType.LUMBER,
+                ResourceType.GRAIN, ResourceType.GRAIN, ResourceType.GRAIN,
+                ResourceType.GRAIN, ResourceType.WOOL, ResourceType.WOOL, ResourceType.WOOL,
+                ResourceType.WOOL, ResourceType.BRICK, ResourceType.BRICK, ResourceType.BRICK,
+                ResourceType.ORE, ResourceType.ORE, ResourceType.ORE,
+                null
+        };
+        int[] tokenOrder = {11,3,6,4,5,9,10,8,2,12,9,10,4,5,6,3,8,11,0};
         List<HexTile> tiles = board.getTiles();
         for (int i = 0; i < tiles.size() && i < 19; i++) {
             HexTile tile = tiles.get(i);
             tile.setResource(resOrder[i]);
-            if (tokenOrder[i] != 0) {
-                tile.setTokenNumber(Integer.valueOf(tokenOrder[i]));
-            }
-            
-            // Link nodes to tiles to enable resource production simulation.
-            // In this simplified simulation, we associate 3 nodes with each tile.
+            if (tokenOrder[i] != 0) tile.setTokenNumber(tokenOrder[i]);
             for (int j = 0; j < 3; j++) {
                 int nodeId = (i * 2 + j) % board.getNodes().size();
                 tile.addNode(board.getNodes().get(nodeId));
             }
         }
 
-        // Perform initial placement of settlements for all players
-        for (int i = 0; i < players.length; i++) {
-            Player p = players[i];
-            Node n = board.getNodes().get(i * 2);
-            // Build the initial settlement for each player during setup phase
-            BuildStructure bs = gameMaster.getBuildService();
-            gameMaster.getBuildService().buildSettlement(p, n, gameMaster.getBoard(), gameMaster.getBank());
-            System.out.println("0 / " + p.getName() + ": placed a settlement on node " + n.getId());
+        Scanner scanner = new Scanner(System.in);
+
+        // ====== INITIAL PLACEMENT (2 settlements each) ======
+
+        // First round: normal order
+        for (Player p : players) {
+            Node node = null;
+            if (p instanceof HumanPlayer) {
+                node = ((HumanPlayer) p).chooseInitialNode(board);
+                // Ensure node is valid
+                if (!board.isValidSettlement(node, p, true)) {
+                    System.out.println("Invalid node chosen, pick again.");
+                    node = ((HumanPlayer) p).chooseInitialNode(board);
+                }
+            } else {
+                // AI chooses first available valid node
+                for (Node n : board.getNodes()) {
+                    if (validator.canBuildSettlement(p, n, board, true)) { // initialPlacement = true
+                        node = n;
+                        break;
+                    }
+                }
+            }
+
+            // Place settlement directly (ignore resources)
+            node.setOwner(p);
+            node.setBuilding(BuildingType.SETTLEMENT);
+            p.addVictoryPoints(1);
+
+            System.out.println("0 / " + p.getName() + ": placed first settlement on node " + node.getId());
         }
 
-        // Execute the main simulation loop
-        for (int round = 1; round <= turns; round++) {
+        // Second round: reverse order
+        for (int i = players.length - 1; i >= 0; i--) {
+            Player p = players[i];
+            Node node = null;
+            if (p instanceof HumanPlayer) {
+                node = ((HumanPlayer) p).chooseInitialNode(board);
+                if (!board.isValidSettlement(node, p, true)) {
+                    System.out.println("Invalid node chosen, pick again.");
+                    node = ((HumanPlayer) p).chooseInitialNode(board);
+                }
+            } else {
+                for (Node n : board.getNodes()) {
+                    if (validator.canBuildSettlement(p, n, board, true)) {
+                        node = n;
+                        break;
+                    }
+                }
+            }
+
+            node.setOwner(p);
+            node.setBuilding(BuildingType.SETTLEMENT);
+            p.addVictoryPoints(1);
+
+            System.out.println("0 / " + p.getName() + ": placed second settlement on node " + node.getId());
+        }
+
+        // ====== MAIN GAME LOOP ======
+        for (int round = 1; round <= maxTurns; round++) {
+            System.out.println("----- Round " + round + " -----");
+
             for (int i = 0; i < players.length; i++) {
                 Player p = gameMaster.getCurrentPlayer();
-                
-                // Turn Action: Roll the dice and distribute resources accordingly
-                int roll = gameMaster.rollDice();
-                System.out.println(round + " / " + p.getName() + ": rolled a " + roll);
 
-                if (roll == 7) {
-                    // robber logic to discard, move robber, steal
-                    robber.rollSeven(gameMaster.getBoard(), gameMaster.getPlayers(), p);
-                    System.out.println(round + " / " + p.getName() + ": robber activated");
+                System.out.println("----- " + p.getName() + "'s Turn -----");
+
+                // Only roll automatically for AI players
+                if (!(p instanceof HumanPlayer)) {
+                    int roll = gameMaster.rollDice();
+                    System.out.println(round + " / " + p.getName() + ": rolled a " + roll);
+
+                    if (roll == 7) {
+                        new Robber().rollSeven(board, players, p);
+                        System.out.println(round + " / " + p.getName() + ": robber activated");
+                    } else {
+                        gameMaster.distributeResources(roll);
+                    }
+                }
+
+                // ====== BUILDING PHASE ======
+                if (p instanceof HumanPlayer) {
+                    ((HumanPlayer) p).takeTurn(gameMaster, round);
                 } else {
-                    gameMaster.distributeResources(roll);
-                }
-
-                // Simulation Logic: Periodically grant additional resources to accelerate game progress
-                if (Math.random() > 0.3) {
-                    p.addResource(ResourceType.LUMBER, 2);
-                    p.addResource(ResourceType.BRICK, 2);
-                    p.addResource(ResourceType.GRAIN, 1);
-                    p.addResource(ResourceType.WOOL, 1);
-                }
-
-                // Decision Logic: Attempt to build a settlement or a road if resources permit
-                if (p.getCurrentResources().get(ResourceType.LUMBER) > 0 && p.getCurrentResources().get(ResourceType.BRICK) > 0) {
                     boolean built = false;
-                    // Try to find a valid location for a new settlement
-                    for (Node node : board.getNodes()) {
-                        if (board.isValidSettlement(node, p)) {
-                            if (gameMaster.buildSettlement(node)) {
-                                System.out.println(round + " / " + p.getName() + ": built a settlement on node " + node.getId());
+
+                    // Try to build settlement (normal gameplay)
+                    for (Node n : board.getNodes()) {
+                        if (validator.canBuildSettlement(p, n, board, false)) { // initialPlacement = false
+                            if (buildService.buildSettlement(p, n, board, gameMaster.getBank())) {
+                                System.out.println(round + " / " + p.getName() + ": built a settlement on node " + n.getId());
                                 built = true;
                                 break;
                             }
                         }
                     }
-                    
-                    // If no settlement could be built, attempt to build a road instead
+
+                    // Try to build road if no settlement built
                     if (!built) {
-                        p.removeResource(ResourceType.LUMBER, 1);
-                        p.removeResource(ResourceType.BRICK, 1);
-                        System.out.println(round + " / " + p.getName() + ": built a road");
+                        for (Edge e : board.getEdges()) {
+                            if (board.isValidRoad(e, p)) {
+                                if (buildService.buildRoad(p, e, board, gameMaster.getBank())) {
+                                    System.out.println(round + " / " + p.getName() + ": built a road on edge " + e.getId());
+                                    built = true;
+                                    break;
+                                }
+                            }
+                        }
                     }
-                } else {
-                    // End turn if no building actions are possible
-                    System.out.println(round + " / " + p.getName() + ": ended turn");
+
+                    if (!built) {
+                        System.out.println(round + " / " + p.getName() + ": ended turn (no valid build or not enough resources)");
+                    }
                 }
 
-                // Check if the current player has reached the victory point threshold
+                // Check for win
                 if (gameMaster.checkWin()) {
                     System.out.println(round + " / " + p.getName() + ": WON THE GAME!");
                     return;
                 }
-                
-                // Pass the turn to the next player
+
                 gameMaster.nextTurn();
             }
         }

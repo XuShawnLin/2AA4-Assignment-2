@@ -92,4 +92,18 @@ public class Player {
 	public void build() {
 		// Implementation for building
 	}
+
+	public void takeTurn(GameMaster gameMaster, int round) {
+
+        int roll = gameMaster.rollDice();
+        System.out.println(round + " / " + name + ": rolled a " + roll);
+
+        if (roll == 7) {
+            System.out.println(round + " / " + name + ": robber activated");
+        } else {
+            gameMaster.distributeResources(roll);
+        }
+
+        System.out.println(round + " / " + name + ": ended turn");
+    }
 }
