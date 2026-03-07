@@ -12,7 +12,9 @@ public class Demonstrator {
             try {
                 int inputTurns = Integer.parseInt(args[0]);
                 if (inputTurns > 0 && inputTurns <= 8192) maxTurns = inputTurns;
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException nfe) {
+                System.err.println("[Config] Ignoring invalid maxTurns argument '" + args[0] + "': " + nfe.getMessage());
+            }
         }
 
         System.out.println("Turns: " + maxTurns);

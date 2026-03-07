@@ -1,13 +1,17 @@
 package A2;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.time.Duration;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Minimal JSON exporter that converts the Java board state into the
@@ -173,9 +177,19 @@ public final class VisualExporter {
     }
 
     private static void runPythonRender(File visualizeDir, String baseMapName, String stateName) {
+        // Strictly allow only expected filenames to avoid command injection via parameters
+        if (!"base_map.json".equals(baseMapName) || !"state.json".equals(stateName)) {
+            System.err.println("[Visualizer] Skipping render due to unexpected filenames.");
+            return;
+        }
+
+        // Resolve python executable from environment when available, else fall back to 'python'
+        String pyFromEnv = System.getenv("PYTHON");
+        String pythonExe = (pyFromEnv != null && !pyFromEnv.isBlank()) ? pyFromEnv : "python";
+
         try {
             ProcessBuilder pb = new ProcessBuilder(
-                    "python",
+                    pythonExe,
                     "light_visualizer.py",
                     baseMapName,
                     stateName
@@ -183,8 +197,27 @@ public final class VisualExporter {
             pb.directory(visualizeDir);
             pb.redirectErrorStream(true);
             Process p = pb.start();
-            // Best-effort: do not block indefinitely; wait a short time
-            p.waitFor();
+
+            // Drain output to avoid potential deadlocks
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    // Reduce noise; log only important lines
+                    if (line.toLowerCase(Locale.ROOT).contains("error") || line.toLowerCase(Locale.ROOT).contains("traceback")) {
+                        System.err.println("[Visualizer] " + line);
+                    }
+                }
+            }
+
+            // Wait with timeout; if exceeds, destroy the process
+            boolean finished = p.waitFor(15, TimeUnit.SECONDS);
+            if (!finished) {
+                p.destroyForcibly();
+                System.err.println("[Visualizer] Renderer timed out and was terminated.");
+            }
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            System.err.println("[Visualizer] Render interrupted: " + ie.getMessage());
         } catch (Exception ex) {
             System.err.println("[Visualizer] Python render skipped: " + ex.getMessage());
         }
