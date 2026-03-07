@@ -52,7 +52,7 @@ public class Demonstrator {
         //Main game loop
         for (int round = 1; round <= maxTurns; round++) {
 
-            System.out.println("----- Round " + round + " -----");
+            System.out.println("Turn: " + round);
 
             for (int i = 0; i < players.length; i++) {
 
