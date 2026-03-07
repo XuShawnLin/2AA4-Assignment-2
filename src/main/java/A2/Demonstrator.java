@@ -37,8 +37,7 @@ public class Demonstrator {
 
         Scanner scanner = new Scanner(System.in);
 
-        // ===== INITIAL PLACEMENT =====
-
+        //Call method so players can place intial nodes
         for (Player p : players) {
             Node node = chooseInitialNode(p, board, validator);
             placeSettlement(p, node, "first");
@@ -50,7 +49,7 @@ public class Demonstrator {
             placeSettlement(p, node, "second");
         }
 
-        // ===== MAIN GAME LOOP =====
+        //Main game loop
         for (int round = 1; round <= maxTurns; round++) {
 
             System.out.println("----- Round " + round + " -----");
@@ -79,8 +78,7 @@ public class Demonstrator {
         }
     }
 
-    // ================= HELPER METHODS =================
-
+    //Set up board method
     private static void setupTiles(Board board) {
 
         ResourceType[] resOrder = {
@@ -112,6 +110,7 @@ public class Demonstrator {
         }
     }
 
+    //Method for placing settlements on Nodes
     private static Node chooseInitialNode(Player p, Board board, BuildValidator validator) {
 
         Node node = null;
