@@ -25,11 +25,7 @@ public class HumanPlayer extends Player {
 
         while (chosenNode == null) {
             System.out.println("Choose a node id to place your settlement:");
-            for (Node node : nodes) {
-                System.out.print(node.getId() + " ");
-            }
-            System.out.println();
-
+            
             String input = scanner.nextLine().trim();
             if (input.equalsIgnoreCase("back")) return null;
 
@@ -250,3 +246,4 @@ public class HumanPlayer extends Player {
     }
 
 }
+
