@@ -32,7 +32,6 @@ public class BuildStructure {
         this.validator = (validator == null) ? new BuildValidator() : validator;
     }
 
-    // ---------------- New getter ----------------
     public BuildValidator getValidator() {
         return this.validator;
     }
