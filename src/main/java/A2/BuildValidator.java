@@ -9,7 +9,6 @@ public class BuildValidator {
         return true;
     }
 
-    // ---------------- Fixed method ----------------
     public boolean canBuildSettlement(Player player, Node node, Board board, boolean initialPlacement) {
         if (player == null || node == null) return false;
         if (node.isOccupied()) return false; // node must be free
