@@ -40,7 +40,6 @@ public class HumanPlayer extends Player {
                         .findFirst()
                         .orElse(null);
 
-                // ✅ FIX: Pass the boolean for initial placement (ignoreRoads = true)
                 if (node != null && board.isValidSettlement(node, this, true)) {
                     chosenNode = node;
                 } else {
@@ -249,4 +248,5 @@ public class HumanPlayer extends Player {
         }
         return chosenEdge;
     }
+
 }
