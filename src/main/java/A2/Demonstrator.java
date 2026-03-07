@@ -41,12 +41,15 @@ public class Demonstrator {
         for (Player p : players) {
             Node node = chooseInitialNode(p, board, validator);
             placeSettlement(p, node, "first");
+            // Export visualization after each initial placement
+            VisualExporter.export(board, players, true);
         }
 
         for (int i = players.length - 1; i >= 0; i--) {
             Player p = players[i];
             Node node = chooseInitialNode(p, board, validator);
             placeSettlement(p, node, "second");
+            VisualExporter.export(board, players, true);
         }
 
         //Main game loop
@@ -67,6 +70,9 @@ public class Demonstrator {
                 } else {
                     aiBuildTurn(p, board, validator, buildService, gameMaster, round);
                 }
+
+                // Update visualizer after each player's turn
+                VisualExporter.export(board, players, true);
 
                 if (gameMaster.checkWin()) {
                     System.out.println(round + " / " + p.getName() + ": WON THE GAME!");
