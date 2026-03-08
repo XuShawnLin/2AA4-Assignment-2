@@ -23,7 +23,7 @@ public class BuildValidator {
         return board != null && board.isValidSettlement(node, player, false);
     }
 
-    public boolean canBuildCity(Player player, Node node, Board board) {
+    public boolean canBuildCity(Player player, Node node) {
         if (player == null || node == null) return false;
         return node.getOwner() == player && node.getBuilding() == BuildingType.SETTLEMENT;
     }

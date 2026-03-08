@@ -258,17 +258,6 @@ public final class VisualExporter {
             pb.redirectErrorStream(true);
             Process p = pb.start();
 
-//            // Drain output to avoid potential deadlocks
-//            try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
-//                String line;
-//                while ((line = br.readLine()) != null) {
-//                    // Reduce noise; log only important lines
-//                    if (line.toLowerCase(Locale.ROOT).contains("error") || line.toLowerCase(Locale.ROOT).contains("traceback")) {
-//                        System.err.println("[Visualizer] " + line);
-//                    }
-//                }
-//            }
-
             // Wait with timeout; if exceeds, destroy the process
             boolean finished = p.waitFor(15, TimeUnit.SECONDS);
             if (!finished) {
@@ -314,23 +303,6 @@ public final class VisualExporter {
             pb.redirectErrorStream(true);
             Process p = pb.start();
             watchProcess = p;
-//
-//            // Drain output asynchronously to avoid blocking and reduce noise.
-//            Thread drainer = new Thread(() -> {
-//                try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
-//                    String line;
-//                    while ((line = br.readLine()) != null) {
-//                        String low = line.toLowerCase(Locale.ROOT);
-//                        if (low.contains("error") || low.contains("traceback")) {
-//                            System.err.println("[Visualizer] " + line);
-//                        }
-//                    }
-//                } catch (IOException ioe) {
-//                    // Ignore drainer IO issues
-//                }
-//            }, "VisualizerWatchOutput");
-//            drainer.setDaemon(true);
-//            drainer.start();
 
             // Stop on JVM shutdown
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {

@@ -93,10 +93,8 @@ public class Robber {
         for (Node node : tile.getNodes()) {
             if (node != null && node.isOccupied() && node.getOwner() != null) {
                 Player owner = node.getOwner();
-                if (owner != roller && !playersLeft.contains(owner)) {  //only consider owners who actually have something to steal
-                    if (owner.getTotalResources() > 0) {
-                        playersLeft.add(owner);
-                    }
+                if (owner != roller && !playersLeft.contains(owner) && owner.getTotalResources() > 0) {  //only consider owners who actually have something to steal
+                    playersLeft.add(owner);
                 }
             }
         }

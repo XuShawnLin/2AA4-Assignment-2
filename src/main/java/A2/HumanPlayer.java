@@ -23,7 +23,6 @@ public class HumanPlayer extends Player {
      * Let the human choose the initial settlement during game setup.
      */
     public Node chooseInitialNode(Board board) {
-        List<Node> nodes = board.getNodes();
         Node chosenNode = null;
 
         while (chosenNode == null) {
