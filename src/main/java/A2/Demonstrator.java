@@ -1,12 +1,9 @@
 package A2;
 
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.Scanner;
 
 public class Demonstrator {
-
-    private static final Logger LOGGER = Logger.getLogger(Demonstrator.class.getName());
 
     public static void main(String[] args) {
         int maxTurns = 8192;
@@ -22,13 +19,13 @@ public class Demonstrator {
                         int inputTurns = Integer.parseInt(arg);
                         if (inputTurns > 0 && inputTurns <= 8192) maxTurns = inputTurns;
                     } catch (NumberFormatException nfe) {
-                        LOGGER.log(Level.WARNING, "[Config] Ignoring unrecognized argument '{0}': {1}", new Object[]{arg, nfe.getMessage()});
+                        System.err.println("[Config] Ignoring unrecognized argument '" + arg + "': " + nfe.getMessage());
                     }
                 }
             }
         }
 
-        LOGGER.log(Level.INFO, "Turns: {0}", maxTurns);
+        System.out.println("Turns: " + maxTurns);
 
         GameMaster gameMaster = new GameMaster();
         gameMaster.startGame();
@@ -48,7 +45,7 @@ public class Demonstrator {
 
         setupTiles(board);
 
-        // Removed unused Scanner to satisfy static analysis
+        Scanner scanner = new Scanner(System.in);
 
         // Initialize visualizer integration
         if (useWatch) {
@@ -78,18 +75,18 @@ public class Demonstrator {
         //Main game loop
         for (int round = 1; round <= maxTurns; round++) {
 
-            LOGGER.log(Level.INFO, "Turn: {0}", round);
+            System.out.println("Turn: " + round);
 
             for (int i = 0; i < players.length; i++) {
 
                 Player p = gameMaster.getCurrentPlayer();
 
-                LOGGER.log(Level.INFO, "----- {0}'s Turn -----", p.getName());
+                System.out.println("----- " + p.getName() + "'s Turn -----");
 
                 handleDiceRoll(gameMaster, board, players, p, round);
 
-                if (p instanceof HumanPlayer humanPlayer) {
-                    humanPlayer.takeTurn(gameMaster, round);
+                if (p instanceof HumanPlayer) {
+                    ((HumanPlayer) p).takeTurn(gameMaster, round);
                 } else {
                     aiBuildTurn(p, board, validator, buildService, gameMaster, round);
                 }
@@ -98,7 +95,7 @@ public class Demonstrator {
                 VisualExporter.export(board, players, !useWatch);
 
                 if (gameMaster.checkWin()) {
-                    LOGGER.log(Level.INFO, "{0} / {1}: WON THE GAME!", new Object[]{round, p.getName()});
+                    System.out.println(round + " / " + p.getName() + ": WON THE GAME!");
                     return;
                 }
 
@@ -144,13 +141,13 @@ public class Demonstrator {
 
         Node node = null;
 
-        if (p instanceof HumanPlayer human) {
+        if (p instanceof HumanPlayer) {
 
-            node = human.chooseInitialNode(board);
+            node = ((HumanPlayer) p).chooseInitialNode(board);
 
             if (!board.isValidSettlement(node, p, true)) {
-                LOGGER.info("Invalid node chosen, pick again.");
-                node = human.chooseInitialNode(board);
+                System.out.println("Invalid node chosen, pick again.");
+                node = ((HumanPlayer) p).chooseInitialNode(board);
             }
 
         } else {
@@ -173,7 +170,8 @@ public class Demonstrator {
         node.setBuilding(BuildingType.SETTLEMENT);
         p.addVictoryPoints(1);
 
-        LOGGER.log(Level.INFO, "0 / {0}: placed {1} settlement on node {2}", new Object[]{p.getName(), order, node.getId()});
+        System.out.println("0 / " + p.getName() + ": placed " + order +
+                " settlement on node " + node.getId());
     }
 
     private static void handleDiceRoll(GameMaster gameMaster, Board board,
@@ -183,13 +181,13 @@ public class Demonstrator {
 
             int roll = gameMaster.rollDice();
 
-            LOGGER.log(Level.INFO, "{0} / {1}: rolled a {2}", new Object[]{round, p.getName(), roll});
+            System.out.println(round + " / " + p.getName() + ": rolled a " + roll);
 
             if (roll == 7) {
 
                 new Robber().rollSeven(board, players, p);
 
-                LOGGER.log(Level.INFO, "{0} / {1}: robber activated", new Object[]{round, p.getName()});
+                System.out.println(round + " / " + p.getName() + ": robber activated");
 
             } else {
 
@@ -210,7 +208,8 @@ public class Demonstrator {
 
                 if (buildService.buildSettlement(p, n, board)) {
 
-                    LOGGER.log(Level.INFO, "{0} / {1}: built a settlement on node {2}", new Object[]{round, p.getName(), n.getId()});
+                    System.out.println(round + " / " + p.getName()
+                            + ": built a settlement on node " + n.getId());
 
                     built = true;
                     break;
@@ -226,7 +225,8 @@ public class Demonstrator {
 
                     if (buildService.buildRoad(p, e, board)) {
 
-                        LOGGER.log(Level.INFO, "{0} / {1}: built a road on edge {2}", new Object[]{round, p.getName(), e.getId()});
+                        System.out.println(round + " / " + p.getName()
+                                + ": built a road on edge " + e.getId());
 
                         built = true;
                         break;
@@ -236,7 +236,8 @@ public class Demonstrator {
         }
 
         if (!built) {
-            LOGGER.log(Level.INFO, "{0} / {1}: ended turn (no valid build or not enough resources)", new Object[]{round, p.getName()});
+            System.out.println(round + " / " + p.getName()
+                    + ": ended turn (no valid build or not enough resources)");
         }
     }
 }
