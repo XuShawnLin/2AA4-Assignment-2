@@ -1,16 +1,15 @@
 package A2;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Minimal JSON exporter that converts the Java board state into the
@@ -23,6 +22,8 @@ public final class VisualExporter {
 
     // Persistent watcher process for Python visualizer (--watch mode)
     private static volatile Process watchProcess;
+
+    private static final Logger LOGGER = Logger.getLogger(VisualExporter.class.getName());
 
     // Spiral order cube coordinates for a radius-2 hex grid (center, ring1, ring2)
     // Matches Board tile ids: 0=center, 1-6=inner ring, 7-18=outer ring
@@ -89,22 +90,19 @@ public final class VisualExporter {
         // Resolve visualize directory under project root
         String root = System.getProperty("user.dir");
         File visualizeDir = new File(root, "visualize");
-        File outDir = visualizeDir;
         File scraped = new File(visualizeDir, "scraped_boards");
-        if (!scraped.exists()) {
-            // Ensure output directory exists for single renders
-            // mkdirs() return value is not critical here
-            scraped.mkdirs();
+        if (!scraped.exists() && !scraped.mkdirs()) {
+            LOGGER.warning("[Visualizer] Failed to create scraped_boards directory; images may not be saved.");
         }
 
-        File baseMap = new File(outDir, "base_map.json");
-        File state = new File(outDir, "state.json");
+        File baseMap = new File(visualizeDir, "base_map.json");
+        File state = new File(visualizeDir, "state.json");
 
         try {
             writeBaseMap(board, baseMap);
             writeState(board, players, state);
         } catch (IOException e) {
-            System.err.println("[Visualizer] Failed to write JSON: " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "[Visualizer] Failed to write JSON: {0}", e.getMessage());
             return;
         }
 
@@ -241,7 +239,7 @@ public final class VisualExporter {
     private static void runPythonRender(File visualizeDir, String baseMapName, String stateName) {
         // Strictly allow only expected filenames to avoid command injection via parameters
         if (!"base_map.json".equals(baseMapName) || !"state.json".equals(stateName)) {
-            System.err.println("[Visualizer] Skipping render due to unexpected filenames.");
+            LOGGER.warning("[Visualizer] Skipping render due to unexpected filenames.");
             return;
         }
 
@@ -275,13 +273,13 @@ public final class VisualExporter {
             boolean finished = p.waitFor(15, TimeUnit.SECONDS);
             if (!finished) {
                 p.destroyForcibly();
-                System.err.println("[Visualizer] Renderer timed out and was terminated.");
+                LOGGER.warning("[Visualizer] Renderer timed out and was terminated.");
             }
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
-            System.err.println("[Visualizer] Render interrupted: " + ie.getMessage());
+            LOGGER.log(Level.WARNING, "[Visualizer] Render interrupted: {0}", ie.getMessage());
         } catch (Exception ex) {
-            System.err.println("[Visualizer] Python render skipped: " + ex.getMessage());
+            LOGGER.log(Level.WARNING, "[Visualizer] Python render skipped: {0}", ex.getMessage());
         }
     }
 
@@ -350,9 +348,9 @@ public final class VisualExporter {
                 } catch (Exception ignored) { }
             }, "VisualizerWatchShutdown"));
 
-            System.out.println("[Visualizer] Watch mode started (light_visualizer.py --watch).");
+            LOGGER.info("[Visualizer] Watch mode started (light_visualizer.py --watch).");
         } catch (Exception ex) {
-            System.err.println("[Visualizer] Failed to start watch mode: " + ex.getMessage());
+            LOGGER.log(Level.WARNING, "[Visualizer] Failed to start watch mode: {0}", ex.getMessage());
         }
     }
 }
