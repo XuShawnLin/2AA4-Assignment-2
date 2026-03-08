@@ -1,15 +1,15 @@
 package A2;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
 public class BuildStructure {
 
     private final BuildValidator validator;
 
-    public static final Map<ResourceType, Integer> SETTLEMENT_COST = new HashMap<>();
-    public static final Map<ResourceType, Integer> ROAD_COST = new HashMap<>();
-    public static final Map<ResourceType, Integer> CITY_COST = new HashMap<>();
+    public static final Map<ResourceType, Integer> SETTLEMENT_COST = new EnumMap<>(ResourceType.class);
+    public static final Map<ResourceType, Integer> ROAD_COST = new EnumMap<>(ResourceType.class);
+    public static final Map<ResourceType, Integer> CITY_COST = new EnumMap<>(ResourceType.class);
 
     static {
         SETTLEMENT_COST.put(ResourceType.BRICK, 1);
@@ -37,19 +37,19 @@ public class BuildStructure {
     }
 
     private boolean hasResources(Player player, Map<ResourceType, Integer> cost) {
-        for (ResourceType r : cost.keySet()) {
-            if (player.getCurrentResources().getOrDefault(r, 0) < cost.get(r)) return false;
+        for (Map.Entry<ResourceType, Integer> e : cost.entrySet()) {
+            if (player.getCurrentResources().getOrDefault(e.getKey(), 0) < e.getValue()) return false;
         }
         return true;
     }
 
     private void payResources(Player player, Map<ResourceType, Integer> cost) {
-        for (ResourceType r : cost.keySet()) {
-            player.removeResource(r, cost.get(r));
+        for (Map.Entry<ResourceType, Integer> e : cost.entrySet()) {
+            player.removeResource(e.getKey(), e.getValue());
         }
     }
 
-    public boolean buildRoad(Player player, Edge edge, Board board, Bank bank) {
+    public boolean buildRoad(Player player, Edge edge, Board board) {
         if (!validator.canBuildRoad(player, edge, board)) return false;
         if (!hasResources(player, ROAD_COST)) return false;
 
@@ -59,7 +59,7 @@ public class BuildStructure {
         return true;
     }
 
-    public boolean buildSettlement(Player player, Node node, Board board, Bank bank) {
+    public boolean buildSettlement(Player player, Node node, Board board) {
         if (!validator.canBuildSettlement(player, node, board, false)) return false;
         if (!hasResources(player, SETTLEMENT_COST)) return false;
 
@@ -70,7 +70,7 @@ public class BuildStructure {
         return true;
     }
 
-    public boolean buildCity(Player player, Node node, Board board, Bank bank) {
+    public boolean buildCity(Player player, Node node, Board board) {
         if (!validator.canBuildCity(player, node, board)) return false;
         if (!hasResources(player, CITY_COST)) return false;
 
