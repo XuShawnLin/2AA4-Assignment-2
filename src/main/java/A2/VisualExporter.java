@@ -7,7 +7,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -21,6 +20,9 @@ import java.util.concurrent.TimeUnit;
  */
 public final class VisualExporter {
     private VisualExporter() {}
+
+    // Persistent watcher process for Python visualizer (--watch mode)
+    private static volatile Process watchProcess;
 
     // Spiral order cube coordinates for a radius-2 hex grid (center, ring1, ring2)
     // Matches Board tile ids: 0=center, 1-6=inner ring, 7-18=outer ring
@@ -89,7 +91,11 @@ public final class VisualExporter {
         File visualizeDir = new File(root, "visualize");
         File outDir = visualizeDir;
         File scraped = new File(visualizeDir, "scraped_boards");
-        if (!scraped.exists()) scraped.mkdirs();
+        if (!scraped.exists()) {
+            // Ensure output directory exists for single renders
+            // mkdirs() return value is not critical here
+            scraped.mkdirs();
+        }
 
         File baseMap = new File(outDir, "base_map.json");
         File state = new File(outDir, "state.json");
@@ -102,6 +108,7 @@ public final class VisualExporter {
             return;
         }
 
+        // Prefer watch mode: callers can set renderPng=false and start watcher once.
         if (renderPng) {
             runPythonRender(visualizeDir, baseMap.getName(), state.getName());
         }
@@ -139,17 +146,72 @@ public final class VisualExporter {
         sb.append("{\n  \"buildings\": [\n");
 
         boolean first = true;
+        // Pre-compute number of roads per player and quick connectivity lookup
+        java.util.Map<Player, Integer> roadCount = new java.util.HashMap<>();
+        java.util.Map<Player, java.util.Set<Integer>> roadTouchingNodes = new java.util.HashMap<>();
+        for (Edge e : board.getEdges()) {
+            if (e.getOwner() != null && e.getBuilding() == BuildingType.ROAD && e.getConnectedNodes().size() == 2) {
+                roadCount.merge(e.getOwner(), 1, Integer::sum);
+                roadTouchingNodes.computeIfAbsent(e.getOwner(), k -> new java.util.HashSet<>())
+                        .add(e.getConnectedNodes().get(0).getId());
+                roadTouchingNodes.computeIfAbsent(e.getOwner(), k -> new java.util.HashSet<>())
+                        .add(e.getConnectedNodes().get(1).getId());
+            }
+        }
+
+        // Keep track of how many initial settlements we export per player (when there are no roads)
+        java.util.Map<Player, Integer> exportedInitialSettlements = new java.util.HashMap<>();
+        // Additionally, if there are zero roads overall, be extra conservative and export
+        // at most two settlements per player (Catan initial placements) when absolutely no
+        // roads exist yet. This aligns with the visualizer's ability to accept initial
+        // placements without connectivity.
+        int totalRoadsAllPlayers = 0;
+        for (Integer c : roadCount.values()) totalRoadsAllPlayers += c;
+
         // Nodes -> settlements/cities
         for (Node n : board.getNodes()) {
-            if (n.getOwner() != null && n.getBuilding() != null) {
-                if (!first) sb.append(",\n");
-                first = false;
-                sb.append("    {")
-                  .append("\"node\": ").append(n.getId()).append(", ")
-                  .append("\"owner\": \"").append(toVisualizerColor(n.getOwner(), players)).append("\",")
-                  .append(" \"type\": \"").append(toVisualizerBuilding(n.getBuilding())).append("\"")
-                  .append("}");
+            if (n.getOwner() == null || n.getBuilding() == null) continue;
+
+            int nodeId = n.getId();
+            if (nodeId < 0 || nodeId >= 54) continue; // catanatron expects 0..53 land nodes
+
+            BuildingType bt = n.getBuilding();
+            Player owner = n.getOwner();
+
+            boolean include = true;
+            if (bt == BuildingType.SETTLEMENT) {
+                int roads = roadCount.getOrDefault(owner, 0);
+                if (roads == 0) {
+                    // Allow up to two initial placements per player even when there are no roads yet
+                    int cap = 2;
+                    int used = exportedInitialSettlements.getOrDefault(owner, 0);
+                    if (used >= cap) {
+                        include = false; // skip extras to avoid invalid non-connected placements
+                    } else {
+                        exportedInitialSettlements.put(owner, used + 1);
+                    }
+                } else {
+                    // Require at least one owned road touching this node
+                    java.util.Set<Integer> touch = roadTouchingNodes.getOrDefault(owner, java.util.Collections.emptySet());
+                    include = touch.contains(nodeId);
+                }
             }
+
+            if (!include) continue;
+
+            if (!first) sb.append(",\n");
+            first = false;
+            sb.append("    {")
+              .append("\"node\": ").append(nodeId).append(", ")
+              .append("\"owner\": \"").append(toVisualizerColor(owner, players)).append("\",")
+              .append(" \"type\": \"").append(toVisualizerBuilding(bt)).append("\"")
+              ;
+
+            // Add an explicit initial flag to help external consumers (optional for current visualizer)
+            if (bt == BuildingType.SETTLEMENT && roadCount.getOrDefault(owner, 0) == 0) {
+                sb.append(", \"initial\": true");
+            }
+            sb.append("}");
         }
 
         sb.append("\n  ],\n  \"roads\": [\n");
@@ -198,16 +260,16 @@ public final class VisualExporter {
             pb.redirectErrorStream(true);
             Process p = pb.start();
 
-            // Drain output to avoid potential deadlocks
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = br.readLine()) != null) {
-                    // Reduce noise; log only important lines
-                    if (line.toLowerCase(Locale.ROOT).contains("error") || line.toLowerCase(Locale.ROOT).contains("traceback")) {
-                        System.err.println("[Visualizer] " + line);
-                    }
-                }
-            }
+//            // Drain output to avoid potential deadlocks
+//            try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
+//                String line;
+//                while ((line = br.readLine()) != null) {
+//                    // Reduce noise; log only important lines
+//                    if (line.toLowerCase(Locale.ROOT).contains("error") || line.toLowerCase(Locale.ROOT).contains("traceback")) {
+//                        System.err.println("[Visualizer] " + line);
+//                    }
+//                }
+//            }
 
             // Wait with timeout; if exceeds, destroy the process
             boolean finished = p.waitFor(15, TimeUnit.SECONDS);
@@ -220,6 +282,77 @@ public final class VisualExporter {
             System.err.println("[Visualizer] Render interrupted: " + ie.getMessage());
         } catch (Exception ex) {
             System.err.println("[Visualizer] Python render skipped: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Ensure the Python visualizer is running in watch mode. This will render a PNG
+     * automatically whenever state.json changes. It launches once per JVM and
+     * is terminated on JVM shutdown.
+     */
+    public static synchronized void ensureWatchRunning() {
+        // Already running and alive
+        if (watchProcess != null) {
+            try {
+                if (watchProcess.isAlive()) return;
+            } catch (Exception ignored) { /* fallthrough to restart */ }
+        }
+
+        String root = System.getProperty("user.dir");
+        File visualizeDir = new File(root, "visualize");
+
+        // Resolve python executable from environment when available, else fall back to 'python'
+        String pyFromEnv = System.getenv("PYTHON");
+        String pythonExe = (pyFromEnv != null && !pyFromEnv.isBlank()) ? pyFromEnv : "python";
+
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                    pythonExe,
+                    "light_visualizer.py",
+                    "base_map.json",
+                    "--watch"
+            );
+            pb.directory(visualizeDir);
+            pb.redirectErrorStream(true);
+            Process p = pb.start();
+            watchProcess = p;
+//
+//            // Drain output asynchronously to avoid blocking and reduce noise.
+//            Thread drainer = new Thread(() -> {
+//                try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
+//                    String line;
+//                    while ((line = br.readLine()) != null) {
+//                        String low = line.toLowerCase(Locale.ROOT);
+//                        if (low.contains("error") || low.contains("traceback")) {
+//                            System.err.println("[Visualizer] " + line);
+//                        }
+//                    }
+//                } catch (IOException ioe) {
+//                    // Ignore drainer IO issues
+//                }
+//            }, "VisualizerWatchOutput");
+//            drainer.setDaemon(true);
+//            drainer.start();
+
+            // Stop on JVM shutdown
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    if (watchProcess != null && watchProcess.isAlive()) {
+                        watchProcess.destroy();
+                        try {
+                            if (!watchProcess.waitFor(2, TimeUnit.SECONDS)) {
+                                watchProcess.destroyForcibly();
+                            }
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                } catch (Exception ignored) { }
+            }, "VisualizerWatchShutdown"));
+
+            System.out.println("[Visualizer] Watch mode started (light_visualizer.py --watch).");
+        } catch (Exception ex) {
+            System.err.println("[Visualizer] Failed to start watch mode: " + ex.getMessage());
         }
     }
 }
