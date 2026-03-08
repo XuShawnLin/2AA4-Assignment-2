@@ -7,9 +7,9 @@ public class BuildStructure {
 
     private final BuildValidator validator;
 
-    public static final Map<ResourceType, Integer> SETTLEMENT_COST = new EnumMap<>(ResourceType.class);
-    public static final Map<ResourceType, Integer> ROAD_COST = new EnumMap<>(ResourceType.class);
-    public static final Map<ResourceType, Integer> CITY_COST = new EnumMap<>(ResourceType.class);
+    protected static final Map<ResourceType, Integer> SETTLEMENT_COST = new EnumMap<>(ResourceType.class);
+    protected static final Map<ResourceType, Integer> ROAD_COST = new EnumMap<>(ResourceType.class);
+    protected static final Map<ResourceType, Integer> CITY_COST = new EnumMap<>(ResourceType.class);
 
     static {
         SETTLEMENT_COST.put(ResourceType.BRICK, 1);
@@ -71,7 +71,7 @@ public class BuildStructure {
     }
 
     public boolean buildCity(Player player, Node node, Board board) {
-        if (!validator.canBuildCity(player, node, board)) return false;
+        if (!validator.canBuildCity(player, node)) return false;
         if (!hasResources(player, CITY_COST)) return false;
 
         payResources(player, CITY_COST);

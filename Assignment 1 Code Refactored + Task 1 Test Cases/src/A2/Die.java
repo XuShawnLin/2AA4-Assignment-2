@@ -25,7 +25,7 @@ public class Die {
 		return this.value;
 	}
 
-	public int roll() { return Roll(); }
+	public int roll() { return this.roll(); }
 
 	public int getValue() {
 		return value;

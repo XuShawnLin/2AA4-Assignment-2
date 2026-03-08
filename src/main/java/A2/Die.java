@@ -20,12 +20,10 @@ public class Die {
 	 * Rolls the die and returns the result.
 	 * @return The result of the die roll.
 	 */
-	public int Roll() {
+	public int roll() {
 		this.value = random.nextInt(6) + 1;
 		return this.value;
 	}
-
-	public int roll() { return Roll(); }
 
 	public int getValue() {
 		return value;

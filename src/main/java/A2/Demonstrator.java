@@ -1,42 +1,47 @@
 package A2;
 
 import java.util.List;
-import java.util.Scanner;
+import java.util.logging.Logger;
 
 public class Demonstrator {
 
+    private static final Logger LOG = Logger.getLogger(Demonstrator.class.getName());
+
     public static void main(String[] args) {
+        Args cfg = parseArgs(args);
+        runGame(cfg);
+    }
+
+    private static Args parseArgs(String[] args) {
         int maxTurns = 8192;
         boolean useWatch = false;
 
-        if (args.length > 0) {
-            // Accept either a numeric turns arg or flags like --watch
+        if (args != null) {
             for (String arg : args) {
                 if ("--watch".equalsIgnoreCase(arg)) {
                     useWatch = true;
                 } else {
                     try {
                         int inputTurns = Integer.parseInt(arg);
-                        if (inputTurns > 0 && inputTurns <= 8192) maxTurns = inputTurns;
+                        if (inputTurns > 0 && inputTurns <= 8192) {
+                            maxTurns = inputTurns;
+                        }
                     } catch (NumberFormatException nfe) {
-                        System.err.println("[Config] Ignoring unrecognized argument '" + arg + "': " + nfe.getMessage());
+                        LOG.warning("[Config] Ignoring unrecognized argument '" + arg + "': " + nfe.getMessage());
                     }
                 }
             }
         }
 
-        System.out.println("Turns: " + maxTurns);
+        LOG.info("Turns: " + maxTurns + (useWatch ? " (watch mode)" : ""));
+        return new Args(maxTurns, useWatch);
+    }
 
+    private static void runGame(Args cfg) {
         GameMaster gameMaster = new GameMaster();
         gameMaster.startGame();
 
-        Player[] players = {
-                new HumanPlayer("Shawn"),
-                new Player("Sabrina"),
-                new Player("Subha"),
-                new Player("Ahmed")
-        };
-
+        Player[] players = createPlayers();
         gameMaster.setPlayers(players);
 
         Board board = gameMaster.getBoard();
@@ -45,23 +50,35 @@ public class Demonstrator {
 
         setupTiles(board);
 
-        Scanner scanner = new Scanner(System.in);
+        initVisualizer(board, players, cfg.useWatch);
 
-        // Initialize visualizer integration
+        doInitialPlacements(players, board, validator, cfg.useWatch);
+
+        playRounds(cfg.maxTurns, gameMaster, board, players, validator, buildService, cfg.useWatch);
+    }
+
+    private static Player[] createPlayers() {
+        return new Player[]{
+                new HumanPlayer("Shawn"),
+                new Player("Sabrina"),
+                new Player("Subha"),
+                new Player("Ahmed")
+        };
+    }
+
+    private static void initVisualizer(Board board, Player[] players, boolean useWatch) {
         if (useWatch) {
-            // Start watch mode once; subsequent exports will just write JSON
             VisualExporter.export(board, players, false);
             VisualExporter.ensureWatchRunning();
         } else {
-            // One-off render after each export
             VisualExporter.export(board, players, true);
         }
+    }
 
-        //Call method so players can place intial nodes
+    private static void doInitialPlacements(Player[] players, Board board, BuildValidator validator, boolean useWatch) {
         for (Player p : players) {
             Node node = chooseInitialNode(p, board, validator);
             placeSettlement(p, node, "first");
-            // Update JSON and render/watch after each initial placement
             VisualExporter.export(board, players, !useWatch);
         }
 
@@ -71,31 +88,35 @@ public class Demonstrator {
             placeSettlement(p, node, "second");
             VisualExporter.export(board, players, !useWatch);
         }
+    }
 
-        //Main game loop
+    private static void playRounds(int maxTurns,
+                                   GameMaster gameMaster,
+                                   Board board,
+                                   Player[] players,
+                                   BuildValidator validator,
+                                   BuildStructure buildService,
+                                   boolean useWatch) {
+
         for (int round = 1; round <= maxTurns; round++) {
-
-            System.out.println("Turn: " + round);
+            LOG.info("Turn: " + round);
 
             for (int i = 0; i < players.length; i++) {
-
                 Player p = gameMaster.getCurrentPlayer();
-
-                System.out.println("----- " + p.getName() + "'s Turn -----");
+                LOG.info("----- " + p.getName() + "'s Turn -----");
 
                 handleDiceRoll(gameMaster, board, players, p, round);
 
-                if (p instanceof HumanPlayer) {
-                    ((HumanPlayer) p).takeTurn(gameMaster, round);
+                if (p instanceof HumanPlayer human) {
+                    human.takeTurn(gameMaster, round);
                 } else {
-                    aiBuildTurn(p, board, validator, buildService, gameMaster, round);
+                    aiBuildTurn(p, board, validator, buildService, round);
                 }
 
-                // Update visualizer JSON and render/watch after each player's turn
                 VisualExporter.export(board, players, !useWatch);
 
                 if (gameMaster.checkWin()) {
-                    System.out.println(round + " / " + p.getName() + ": WON THE GAME!");
+                    LOG.info(round + " / " + p.getName() + ": WON THE GAME!");
                     return;
                 }
 
@@ -103,6 +124,8 @@ public class Demonstrator {
             }
         }
     }
+
+    private record Args(int maxTurns, boolean useWatch) {}
 
     //Set up board method
     private static void setupTiles(Board board) {
@@ -141,13 +164,13 @@ public class Demonstrator {
 
         Node node = null;
 
-        if (p instanceof HumanPlayer) {
+        if (p instanceof HumanPlayer human) {
 
-            node = ((HumanPlayer) p).chooseInitialNode(board);
+            node = human.chooseInitialNode(board);
 
             if (!board.isValidSettlement(node, p, true)) {
-                System.out.println("Invalid node chosen, pick again.");
-                node = ((HumanPlayer) p).chooseInitialNode(board);
+                LOG.warning("Invalid node chosen, pick again.");
+                node = human.chooseInitialNode(board);
             }
 
         } else {
@@ -170,46 +193,59 @@ public class Demonstrator {
         node.setBuilding(BuildingType.SETTLEMENT);
         p.addVictoryPoints(1);
 
-        System.out.println("0 / " + p.getName() + ": placed " + order +
+        LOG.info("0 / " + p.getName() + ": placed " + order +
                 " settlement on node " + node.getId());
     }
 
     private static void handleDiceRoll(GameMaster gameMaster, Board board,
                                        Player[] players, Player p, int round) {
 
-        if (!(p instanceof HumanPlayer)) {
+        if (p instanceof HumanPlayer) {
+            return;
+        }
 
-            int roll = gameMaster.rollDice();
+        int roll = gameMaster.rollDice();
 
-            System.out.println(round + " / " + p.getName() + ": rolled a " + roll);
+        LOG.info(round + " / " + p.getName() + ": rolled a " + roll);
 
-            if (roll == 7) {
+        if (roll == 7) {
 
-                new Robber().rollSeven(board, players, p);
+            new Robber().rollSeven(board, players, p);
 
-                System.out.println(round + " / " + p.getName() + ": robber activated");
+            LOG.info(round + " / " + p.getName() + ": robber activated");
 
-            } else {
+        } else {
 
-                gameMaster.distributeResources(roll);
+            gameMaster.distributeResources(roll);
 
-            }
         }
     }
 
     private static void aiBuildTurn(Player p, Board board, BuildValidator validator,
-                                    BuildStructure buildService, GameMaster gameMaster, int round) {
+                                    BuildStructure buildService, int round) {
 
         boolean built = false;
 
         for (Node n : board.getNodes()) {
+            if (validator.canBuildSettlement(p, n, board, false)
+                    && buildService.buildSettlement(p, n, board)) {
 
-            if (validator.canBuildSettlement(p, n, board, false)) {
+                LOG.info(round + " / " + p.getName()
+                        + ": built a settlement on node " + n.getId());
 
-                if (buildService.buildSettlement(p, n, board)) {
+                built = true;
+                break;
+            }
+        }
 
-                    System.out.println(round + " / " + p.getName()
-                            + ": built a settlement on node " + n.getId());
+        if (!built) {
+
+            for (Edge e : board.getEdges()) {
+                if (board.isValidRoad(e, p)
+                        && buildService.buildRoad(p, e, board)) {
+
+                    LOG.info(round + " / " + p.getName()
+                            + ": built a road on edge " + e.getId());
 
                     built = true;
                     break;
@@ -218,25 +254,7 @@ public class Demonstrator {
         }
 
         if (!built) {
-
-            for (Edge e : board.getEdges()) {
-
-                if (board.isValidRoad(e, p)) {
-
-                    if (buildService.buildRoad(p, e, board)) {
-
-                        System.out.println(round + " / " + p.getName()
-                                + ": built a road on edge " + e.getId());
-
-                        built = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (!built) {
-            System.out.println(round + " / " + p.getName()
+            LOG.info(round + " / " + p.getName()
                     + ": ended turn (no valid build or not enough resources)");
         }
     }
