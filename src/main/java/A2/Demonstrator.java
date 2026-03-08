@@ -7,13 +7,21 @@ public class Demonstrator {
 
     public static void main(String[] args) {
         int maxTurns = 8192;
+        boolean useWatch = false;
 
         if (args.length > 0) {
-            try {
-                int inputTurns = Integer.parseInt(args[0]);
-                if (inputTurns > 0 && inputTurns <= 8192) maxTurns = inputTurns;
-            } catch (NumberFormatException nfe) {
-                System.err.println("[Config] Ignoring invalid maxTurns argument '" + args[0] + "': " + nfe.getMessage());
+            // Accept either a numeric turns arg or flags like --watch
+            for (String arg : args) {
+                if ("--watch".equalsIgnoreCase(arg)) {
+                    useWatch = true;
+                } else {
+                    try {
+                        int inputTurns = Integer.parseInt(arg);
+                        if (inputTurns > 0 && inputTurns <= 8192) maxTurns = inputTurns;
+                    } catch (NumberFormatException nfe) {
+                        System.err.println("[Config] Ignoring unrecognized argument '" + arg + "': " + nfe.getMessage());
+                    }
+                }
             }
         }
 
@@ -39,19 +47,29 @@ public class Demonstrator {
 
         Scanner scanner = new Scanner(System.in);
 
+        // Initialize visualizer integration
+        if (useWatch) {
+            // Start watch mode once; subsequent exports will just write JSON
+            VisualExporter.export(board, players, false);
+            VisualExporter.ensureWatchRunning();
+        } else {
+            // One-off render after each export
+            VisualExporter.export(board, players, true);
+        }
+
         //Call method so players can place intial nodes
         for (Player p : players) {
             Node node = chooseInitialNode(p, board, validator);
             placeSettlement(p, node, "first");
-            // Export visualization after each initial placement
-            VisualExporter.export(board, players, true);
+            // Update JSON and render/watch after each initial placement
+            VisualExporter.export(board, players, !useWatch);
         }
 
         for (int i = players.length - 1; i >= 0; i--) {
             Player p = players[i];
             Node node = chooseInitialNode(p, board, validator);
             placeSettlement(p, node, "second");
-            VisualExporter.export(board, players, true);
+            VisualExporter.export(board, players, !useWatch);
         }
 
         //Main game loop
@@ -73,8 +91,8 @@ public class Demonstrator {
                     aiBuildTurn(p, board, validator, buildService, gameMaster, round);
                 }
 
-                // Update visualizer after each player's turn
-                VisualExporter.export(board, players, true);
+                // Update visualizer JSON and render/watch after each player's turn
+                VisualExporter.export(board, players, !useWatch);
 
                 if (gameMaster.checkWin()) {
                     System.out.println(round + " / " + p.getName() + ": WON THE GAME!");
