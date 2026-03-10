@@ -1,8 +1,7 @@
 package A2;
 
 /**
- * Handles resource distribution for a given dice roll (SRP).
- * Logic mirrors the original Game.distributeResources.
+ * Handles resource distribution for a given dice roll
  */
 public class ResourceDistributor {
 
