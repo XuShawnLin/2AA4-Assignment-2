@@ -1,7 +1,7 @@
 package A2;
 
 /**
- * Checks win conditions (SRP).
+ * Checks win conditions.
  */
 public class WinChecker {
 
