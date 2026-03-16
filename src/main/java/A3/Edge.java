@@ -1,4 +1,4 @@
-package A2;
+package A3;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,14 +11,17 @@ public class Edge {
 	 * Unique identifier for the edge.
 	 */
 	private int id;
+
 	/**
 	 * Player who owns a road on this edge.
 	 */
 	private Player owner;
+
 	/**
 	 * Type of building on this edge (Road).
 	 */
 	private BuildingType building;
+
 	/**
 	 * Nodes connected by this edge.
 	 */
@@ -43,6 +46,13 @@ public class Edge {
 	}
 
 	/**
+	 * Gets the edge's unique ID.
+	 */
+	public int getId() {
+		return id;
+	}
+
+	/**
 	 * Checks if the edge is already occupied by a road.
 	 * @return True if occupied, false otherwise.
 	 */
@@ -50,29 +60,27 @@ public class Edge {
 		return owner != null;
 	}
 
-    public Player getOwner() {
+	public Player getOwner() {
 		return owner;
 	}
 
-    public void setOwner(Player owner) {
+	public void setOwner(Player owner) {
 		this.owner = owner;
 	}
 
-    public void setBuilding(BuildingType building) {
+	public void setBuilding(BuildingType building) {
 		this.building = building;
 	}
-    
-    public BuildingType getBuilding() {
-        return building;
-    }
 
-    public List<Node> getConnectedNodes() {
+	public BuildingType getBuilding() {
+		return building;
+	}
+
+	public List<Node> getConnectedNodes() {
 		return connectedNodes;
 	}
-    
-    public void addConnectedNode(Node node) {
-        connectedNodes.add(node);
-    }
 
-
+	public void addConnectedNode(Node node) {
+		connectedNodes.add(node);
+	}
 }

@@ -1,19 +1,18 @@
-package A2;
+package A3;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.EnumMap;
 
 /**
  * Class representing the bank in the game.
  */
 public class Bank {
-	private Map<ResourceType, Integer> resourceList;
+	private EnumMap<ResourceType, Integer> resourceList;
 
 	/**
 	 * Constructor for Bank class.
 	 */
 	public Bank() {
-		this.resourceList = new HashMap<>();
+		this.resourceList = new EnumMap<>(ResourceType.class);
 		for (ResourceType type : ResourceType.values()) {
 			resourceList.put(type, 19); // Standard Catan bank has 19 of each
 		}
